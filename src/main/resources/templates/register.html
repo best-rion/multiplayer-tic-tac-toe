@@ -9,9 +9,8 @@
 </head>
 <body>
     <form th:action="@{/register}" th:object="${user}" method="post">
-        <input type="text" th:field="*{username}" id="username">
-		<input type="text" th:value="${sessionId}" name="session">
-        <input type="submit" value="Submit" id="submit">
+        <input type="text" th:field="*{username}" placeholder = "Your name please">
+        <input type="submit" value="Sign In">
     </form>
 	
 </body>

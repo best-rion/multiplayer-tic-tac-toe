@@ -9,18 +9,14 @@
     <title>tic-tac-toe</title>
 </head>
 <body>
-    <form>
-        <div>
-            <label for="connect">WebSocket connection:</label>
-            <button id="connect" type="submit">Connect</button>
-            <button id="disconnect" type="submit" disabled="disabled">Disconnect</button>
-        </div>
-    </form>
     
+	<h3>Oppo: <span th:text="${opponent}"></span></h3>
+	<p id="knock"></p>
+	<h3>User: <span th:text="${principal}"></span></h3>
+	
     <div id="container"></div>
-	<input type="text" th:value="${principal.username}" id="username">
-
-	<input type="text" th:value="${principal.opponent}" id="opponent">
+	
+	<input type="text" th:value="${principal}" id="principal" hidden>
 
 <script>
 
@@ -45,13 +41,20 @@
             }
 			cells.push(row)
         }
+		
+		connect()
     }
+	
+	window.onbeforeunload = function () {
+		stompClient.deactivate();
+		console.log("Disconnected");
+	};
 
 	function makeMove(x,y)
 	{
         stompClient.publish({
             destination: "/app/move",
-            body: JSON.stringify({'x': x, 'y': y, 'opponent':$("#opponent").val()})
+            body: JSON.stringify({ 'x': x, 'y': y })
         });
 	}
 
@@ -64,7 +67,6 @@
 
     }
 
-
     const stompClient = new StompJs.Client({
         brokerURL: 'ws://localhost:8080/gs-guide-websocket'
     });
@@ -72,14 +74,19 @@
     stompClient.onConnect = (frame) => {
         setConnected(true);
         console.log('Connected: ' + frame);
-        stompClient.subscribe('/user/queue/private', (move) => {
+        stompClient.subscribe('/user/queue/move', (move) => {
             console.log(move.headers["message-id"])
             updateBoard(JSON.parse(move.body));
+        });
+		stompClient.subscribe('/user/queue/knock', (user) => {
+            console.log(user.headers["message-id"])
+			
+            $("#knock").html( JSON.parse(user.body).username )
         });
 		
 		stompClient.publish({
             destination: "/app/map",
-            body: JSON.stringify({'username':$("#username").val()})
+            body: JSON.stringify({'username':$("#principal").val()})
         });
     };
 
@@ -106,12 +113,6 @@
         setConnected(false);
         console.log("Disconnected");
     }
-
-    $(function () {
-        $("form").on('submit', (e) => e.preventDefault());
-        $( "#connect" ).click(() => connect());
-        $( "#disconnect" ).click(() => disconnect());
-    });
 	
 </script>
 </body>

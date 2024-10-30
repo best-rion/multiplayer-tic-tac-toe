@@ -1,38 +1,26 @@
 package com.example.tic_tac_toe;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class UsersList
 {
-	public static List<User> users;
+	public static List<String> usernames = new ArrayList<>();
 	
-	public static boolean add(User user)
+	public static HashMap<String, String> httpSessionToUsername = new HashMap<String, String>();
+	
+	public static HashMap<String, String> usernameToOpponent = new HashMap<String, String>();
+	
+	public static boolean map(String httpSession, String username)
 	{
-		if (users == null)
+		if( usernames.contains(username) )
 		{
-			users = new ArrayList<>();
+			return false;
 		}
 		
-		for (User userInList: users)
-		{
-			if (userInList.getSession().equals(user.getSession()))
-			{
-				return false;
-			}
-		}
-
-		users.add(user);
+		usernames.add(username);
+		httpSessionToUsername.put(httpSession, username);
 		return true;
-	}
-	
-	public static void print()
-	{
-		for (User user: users)
-		{
-			System.out.println(user.getUsername());
-			System.out.println(user.getSession());
-			System.out.println("-----------------");
-		}
 	}
 }

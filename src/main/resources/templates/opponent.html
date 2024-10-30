@@ -6,18 +6,13 @@
     <title>Register</title>
 </head>
 <body>
-	<p th:text="${message}"></p>
-    <form th:action="@{/opponent}" th:object="${opponentObject}" method="post">
-        <input type="text" th:field="*{username}">
-        <input type="submit" value="Submit">
-    </form>
-	
-	
+	<h3>Choose your opponent</h3>
 	<ul>
         <li th:each="opponent: ${opponentList}">
             <form th:action="@{/opponent}" th:object="${opponentObject}" method="post">
-                <input type="text" name="username" th:value="${opponent.username}">
-                <input type="submit" value="Submit">
+				<b th:text="${opponent}"></b>
+                <input type="text" name="username" th:value="${opponent}" hidden>
+                <input type="submit" th:value="knock">
             </form>
         </li>
 	</ul>
