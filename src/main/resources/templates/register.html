@@ -4,12 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register</title>
-	<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
 </head>
 <body>
     <form th:action="@{/register}" th:object="${user}" method="post">
-        <input type="text" th:field="*{username}" placeholder = "Your name please">
+        <input type="text" th:field="*{username}" placeholder = "Your name please"><br>
         <input type="submit" value="Sign In">
     </form>
 	

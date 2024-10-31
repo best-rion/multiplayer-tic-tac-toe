@@ -9,24 +9,64 @@
     <title>tic-tac-toe</title>
 </head>
 <body>
-    
-	<h3>Oppo: <span th:text="${opponent}"></span></h3>
-	<p id="knock"></p>
-	<h3>User: <span th:text="${principal}"></span></h3>
+
+	<h2>Username: <span th:text="${principal}"></span> <span id="turn"></span></h2>
+	<h3>Opponent: <span th:text="${opponent}"></span> <span id="message"></span></h3>
+	
+	
+	<div id="options">
+		<p id="wins"></p>
+		<a id="reset">play again</a>
+		<a th:href="@{/dashboard}">quit game</a>
+	</div>
 	
     <div id="container"></div>
 	
 	<input type="text" th:value="${principal}" id="principal" hidden>
 
 <script>
+	var iAmReadyToReset = false
+	var opponentIsReadyToReset = false
+	var gameOn = true;
+	
+	var myTurn = false;
+	var mySymbol = 'X';
+	
+	const stompClient = new StompJs.Client({
+	    brokerURL: 'ws://localhost:8080/websocket'
+	});
 
     var cells = new Array()
-
     var container = document.getElementById("container")
+	
+	
+	function reset()
+	{
+		$("#options").hide()
+		
+		for (var y=0; y<3; y++)
+        {
+            for (var x=0; x<3; x++)
+            {
+                cells[y][x].innerHTML="";
+            }
+        }
+		
+		gameOn=true
+		
+		iAmReadyToReset = false
+		opponentIsReadyToReset = false
+		
+		$("#message").html( " (Ready)" )
+	}
 
     window.onload = ()=>{
+		
+		$("#options").hide()
 
-        for (var y=0; y<3; y++)
+		stompClient.activate();
+		
+		for (var y=0; y<3; y++)
         {
 			var row = new Array()
             for (var x=0; x<3; x++)
@@ -42,77 +82,159 @@
 			cells.push(row)
         }
 		
-		connect()
+		stompClient.publish({
+            destination: "/app/inHome",
+            body: JSON.stringify({'username':$("#principal").val()})
+        });
+		
     }
-	
-	window.onbeforeunload = function () {
-		stompClient.deactivate();
-		console.log("Disconnected");
-	};
 
 	function makeMove(x,y)
 	{
-        stompClient.publish({
-            destination: "/app/move",
-            body: JSON.stringify({ 'x': x, 'y': y })
-        });
+		if (myTurn && gameOn && cells[y][x].innerHTML==="")
+		{
+			stompClient.publish({
+			    destination: "/app/makeMove",
+			    body: JSON.stringify({ 'x': x, 'y': y, 'symbol':null })
+			});
+		}
+	}
+	
+	var winScenarios =
+	[
+		[ [0,0],[0,1],[0,2] ],
+		[ [1,0],[1,1],[1,2] ],
+		[ [2,0],[2,1],[2,2] ],
+		
+		[ [0,0],[1,0],[2,0] ],
+		[ [0,1],[1,1],[2,1] ],
+		[ [0,2],[1,2],[2,2] ],
+		
+		[ [0,0],[1,1],[2,2] ],
+		[ [2,0],[1,1],[0,2] ]
+	]
+	
+	function checkWinScenarios()
+	{
+		for (var i=0; i<8; i++)
+		{
+			if(
+				(
+				cells[ winScenarios[i][0][1] ][ winScenarios[i][0][0] ].innerHTML
+				== 
+				cells[ winScenarios[i][1][1] ][ winScenarios[i][1][0] ].innerHTML
+			   	)
+				&&
+				(
+				cells[ winScenarios[i][0][1] ][ winScenarios[i][0][0] ].innerHTML 
+				== 
+				cells[ winScenarios[i][2][1] ][ winScenarios[i][2][0] ].innerHTML 
+			   	)
+				&&
+				(
+				cells[ winScenarios[i][0][1] ][ winScenarios[i][0][0] ].innerHTML != ""
+				)
+			  )
+			  {
+				$("#wins").html(cells[ winScenarios[i][0][1] ][ winScenarios[i][0][0] ].innerHTML+" wins")
+				$("#options").show()
+				gameOn = false;
+			  }
+		}
 	}
 
     function updateBoard(move)
     {
         var x = parseInt(move.x)
         var y = parseInt(move.y)
-        
-        cells[y][x].innerHTML = 'O'
-
+        cells[y][x].innerHTML = move.symbol
+		
+		checkWinScenarios()
+		
     }
 
-    const stompClient = new StompJs.Client({
-        brokerURL: 'ws://localhost:8080/gs-guide-websocket'
-    });
 
     stompClient.onConnect = (frame) => {
-        setConnected(true);
+		
         console.log('Connected: ' + frame);
+		
         stompClient.subscribe('/user/queue/move', (move) => {
             console.log(move.headers["message-id"])
             updateBoard(JSON.parse(move.body));
-        });
-		stompClient.subscribe('/user/queue/knock', (user) => {
-            console.log(user.headers["message-id"])
+			if (JSON.parse(move.body).symbol === mySymbol)
+			{
+				myTurn = false;
+				$("#turn").html( "Opponent's Turn" )
+			}
+			else
+			{
+				myTurn = true;
+				$("#turn").html( "Your Turn ( "+mySymbol+" )" )
+			}
 			
-            $("#knock").html( JSON.parse(user.body).username )
+        });
+		
+		stompClient.subscribe('/user/queue/opponentMessage', (message) => {
+            console.log(message.headers["message-id"])
+            $("#message").html( " ("+JSON.parse(message.body).content+")" )
+			
+			if (JSON.parse(message.body).content === 'Ready')
+			{
+				myTurn=true
+				mySymbol='O'
+				$("#turn").html( "Your Turn ( O )" )
+			}
+			
+			if (JSON.parse(message.body).content === 'playAgain')
+			{
+				opponentIsReadyToReset = true
+				
+				if (iAmReadyToReset)
+				{
+					reset();
+				}
+			}
         });
 		
 		stompClient.publish({
-            destination: "/app/map",
+            destination: "/app/inHome",
             body: JSON.stringify({'username':$("#principal").val()})
         });
     };
+	
+	window.onbeforeunload = function () {
+		stompClient.deactivate();
+		stompClient.publish({
+	        destination: "/app/outtaHome",
+	        body: JSON.stringify({'username':$("#principal").val()})
+	    });
+	};
+	
 
-    stompClient.onWebSocketError = (error) => {
-        console.error('Error with websocket', error);
-    };
+	stompClient.onWebSocketError = (error) => {
+	    console.error('Error with websocket', error);
+	};
 
-    stompClient.onStompError = (frame) => {
-        console.error('Broker reported error: ' + frame.headers['message']);
-        console.error('Additional details: ' + frame.body);
-    };
-
-    function setConnected(connected) {
-        $("#connect").prop("disabled", connected);
-        $("#disconnect").prop("disabled", !connected);
-    }
-
-    function connect() {
-        stompClient.activate();
-    }
-
-    function disconnect() {
-        stompClient.deactivate();
-        setConnected(false);
-        console.log("Disconnected");
-    }
+	stompClient.onStompError = (frame) => {
+	    console.error('Broker reported error: ' + frame.headers['message']);
+	    console.error('Additional details: ' + frame.body);
+	};
+	
+	$(function () {
+	    $( "#reset" ).click(() => {
+			iAmReadyToReset = true;
+			
+			stompClient.publish({
+			    destination: "/app/letsPlayAgain",
+			    body: JSON.stringify({'username':$("#principal").val()})
+			});
+			
+			if (opponentIsReadyToReset)
+			{
+				reset();
+			}
+		});
+	});
 	
 </script>
 </body>

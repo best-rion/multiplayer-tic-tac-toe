@@ -17,68 +17,79 @@ public class HomeController
 	@GetMapping(value="/")
 	public String home(Model model, HttpSession session)
 	{
-		if ( UsersList.httpSessionToUsername.containsKey( session.getId() ) )
-		{
-			String principal = UsersList.httpSessionToUsername.get(session.getId());
+		// CHECK IF THIS SESSION IS REGISTERED
+		if ( UsersList.httpSession_username.containsKey( session.getId() ) )
+		{	// IF REGISTERED, SHOW HOME PAGE WITH MY NAME AND OPPONENT'S NAME
+			String principal = UsersList.httpSession_username.get(session.getId());
 					
-			model.addAttribute( "principal", UsersList.httpSessionToUsername.get(session.getId()) );
+			model.addAttribute( "principal", UsersList.httpSession_username.get(session.getId()) );
 			model.addAttribute( "opponent", UsersList.usernameToOpponent.get(principal) );
 			return "home";
 		}
+		// OTHERWISE TAKE ME TO THE REGISTER PAGE
 		return "redirect:/register";
 	}
 	
+	
 	@GetMapping(value = "/register")
 	public String registerGet(Model model)
-	{
+	{	// NOTHING. JUST A FORM TO REGISTER MY NAME
 		model.addAttribute("user", new User());
 		return "register";
 	}
 	
 	@PostMapping(value = "/register")
 	public String registerPost(@ModelAttribute User user, HttpSession session)
-	{
-		if( !UsersList.map(session.getId(), user.getUsername()) )
-		{
+	{	// TRY TO INSERT MY NAME IN httpSession_Username Hash List
+		if( !UsersList.insert(session.getId(), user.getUsername()) )
+		{	// IF insert RETURNS FALSE IT MEANS VALUE IS ALREADY THERE
 			return "NameAlreadyTaken";
 		}
-
-		return "redirect:/opponent";
+		// IF SUCCESSFULLY REGISTERED, GO TO THE DASHBOARD
+		return "redirect:/dashboard";
 	}
 	
-	@GetMapping(value = "/opponent")
-	public String opponentGet(Model model, HttpSession session )
-	{
-		List<String> userList = new ArrayList<>();
+	@GetMapping(value = "/dashboard")
+	public String dashboardGet(Model model, HttpSession session)
+	{	
+
+		String principal = UsersList.httpSession_username.get( session.getId() );
 		
-		for (String username: UsersList.usernames )
+		List<String> activeUsers = new ArrayList<>();
+		
+		for (String user: UsersList.httpSession_username.values())
 		{
-			if ( ! UsersList.httpSessionToUsername.get(session.getId()).equals(username) )
+			if (!user.equals(principal))
 			{
-				userList.add(username);
+				activeUsers.add(user);
 			}
 		}
-		model.addAttribute("opponentObject", new User());
-		model.addAttribute("opponentList", userList);
-		return "opponent";
+		
+		
+		List<String> knockers = new ArrayList<>();
+		for (String user: UsersList.usernameToOpponent.keySet())
+		{
+			if (principal.equals(UsersList.usernameToOpponent.get(user)))
+			{
+				knockers.add(user);
+			}
+		}
+		
+		
+		model.addAttribute("principal", principal);
+		model.addAttribute("opponent", new User());
+		model.addAttribute("activeUsers", activeUsers);
+		model.addAttribute("knockers", knockers);
+		return "dashboard";
 	}
 	
-	@PostMapping(value = "/opponent")
-	public String opponentPost(@ModelAttribute User opponent, HttpSession session)
-	{
-		// CHECK IF THE OPPONENT EXISTS IN LIST
-		if ( UsersList.usernames.contains(opponent.getUsername())
-			&& 
-			 (!opponent.getUsername().equals(UsersList.httpSessionToUsername.get(session.getId()))) )
-		{
-			// IF OPPONENT EXIST THEN SET MY OPPONENT IN HASHMAP AND GO HOME
-			UsersList.usernameToOpponent.put(
-					UsersList.httpSessionToUsername.get(session.getId()),
-					opponent.getUsername()
-					);
-			return "redirect:/";
-		}
-
-		return "NoSuchUser";
+	@PostMapping(value = "/dashboard")
+	public String dashboardPost(@ModelAttribute User opponent, HttpSession session)
+	{	
+		String principal = UsersList.httpSession_username.get( session.getId() );
+		
+		UsersList.usernameToOpponent.put(principal, opponent.getUsername());
+		
+		return "redirect:/";
 	}
 }

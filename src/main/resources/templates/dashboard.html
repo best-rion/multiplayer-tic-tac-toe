@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+    <title>Dashboard</title>
+</head>
+<body>
+
+	<h2> Username : <span style="color: #0f77aa;" th:text="${principal}" id="principal"></span></h2>
+	
+	<h3 style="color: #44b5d5;">They want to play with you</h3>
+	<ul id="knocker">
+		<li th:each="knocker: ${knockers}" th:id="${knocker}">
+			<form th:action="@{/dashboard}" th:object="${opponent}" method="post">
+				<input class="username" type="text" name="username" th:value="${knocker}" hidden>
+				<input type="submit" th:value="${knocker}">
+			</form><br>
+		</li>
+	</ul>
+	
+	<h3 style="color: #2596be;">Active Users</h3>
+	<ul id="activeUsers">
+		<li th:each="user: ${activeUsers}">
+			<form th:action="@{/dashboard}" th:object="${opponent}" method="post">
+				<input class="username" type="text" name="username" th:value="${user}" hidden>
+				<input type="submit" th:value="${user}">
+			</form><br>
+		</li>
+	</ul>
+	
+	
+
+	<script>
+
+		const stompClient = new StompJs.Client({
+		    brokerURL: 'ws://localhost:8080/websocket'
+		});
+		
+		window.onload = ()=>{
+			stompClient.activate();
+		}
+		
+		stompClient.onConnect = (frame) => {
+			
+	        console.log('Connected: ' + frame);
+			
+			stompClient.subscribe('/topic/updateUsers', (users) => {
+	            console.log(users.headers["message-id"])
+				console.log(JSON.parse(users.body))
+				insertActiveUsers(JSON.parse(users.body));
+	        });
+			
+			stompClient.subscribe('/user/queue/knockFrom', (user) => {
+	            console.log(user.headers["message-id"])
+				console.log(JSON.parse(user.body))
+				
+				$("#knocker").append(
+
+					"<li id=\""+JSON.parse(user.body).username+"\">"+
+						"<form th:action=\"@{/dashboard}\" th:object=\"${opponent}\" method=\"post\">"+
+							"<input class=\"username\" type=\"text\" name=\"username\" value=\""+ JSON.parse(user.body).username +"\" hidden>"+
+							"<input type=\"submit\" value=\""+ JSON.parse(user.body).username +"\">"+
+						"</form>"+
+					"</li>"
+				);
+				
+	        });
+			
+			stompClient.subscribe('/user/queue/unknockFrom', (user) => {
+	            console.log(user.headers["message-id"])
+				console.log(JSON.parse(user.body))
+				
+				$("#"+JSON.parse(user.body).username).remove()
+
+	        });		
+			
+			stompClient.publish({
+			    destination: "/app/I_am_active_now",
+			    body: JSON.stringify({'username':$("#principal").text()})
+			});
+	    };
+		
+		function insertActiveUsers(users)
+		{
+			$("#activeUsers").html('');
+
+			for (var i=0; i<users.length; i++)
+			{
+				if (users[i] != $("#principal").text())
+				{
+					$("#activeUsers").append(
+
+							"<li>"+
+								"<form th:action=\"@{/dashboard}\" th:object=\"${opponent}\" method=\"post\">"+
+									"<input class=\"username\" type=\"text\" name=\"username\" value=\""+ users[i] +"\" hidden>"+
+									"<input type=\"submit\" value=\""+ users[i] +"\">"+
+								"</form>"+
+							"</li>"
+					);
+				}
+			}
+		}
+	    
+	    stompClient.onWebSocketError = (error) => {
+	        console.error('Error with websocket', error);
+	    };
+
+	    stompClient.onStompError = (frame) => {
+	        console.error('Broker reported error: ' + frame.headers['message']);
+	        console.error('Additional details: ' + frame.body);
+	    };
+		
+		window.onbeforeunload = function () {
+			stompClient.publish({
+			    destination: "/app/I_am_leaving_now",
+			    body: JSON.stringify({'username':$("#principal").text()})
+			});
+			
+			stompClient.deactivate();
+		};
+
+	</script>
+	
+</body>
+</html>

@@ -12,14 +12,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
 	 @Override
 	  public void configureMessageBroker(MessageBrokerRegistry config) {
-	    config.enableSimpleBroker("/queue");
 	    config.setApplicationDestinationPrefixes("/app");
 	    config.setUserDestinationPrefix("/user");
 	  }
 
 	  @Override
 	  public void registerStompEndpoints(StompEndpointRegistry registry) {
-	    registry.addEndpoint("/gs-guide-websocket").addInterceptors();
+		registry.addEndpoint("/websocket");
+	    //registry.addEndpoint("/websocket").addInterceptors();
 	  }
 
 }
