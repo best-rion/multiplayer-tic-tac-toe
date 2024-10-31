@@ -6,10 +6,21 @@
     <title>Register</title>
 </head>
 <body>
-    <form th:action="@{/register}" th:object="${user}" method="post">
-        <input type="text" th:field="*{username}" placeholder = "Your name please"><br>
+	
+	
+    <form th:action="@{/register}" th:object="${user}" method="post" onsubmit="return validateForm()" >
+        <input id="input" type="text" th:field="*{username}" placeholder = "Your name please"><br>
         <input type="submit" value="Sign In">
     </form>
 	
+	<script>
+		function validateForm() {
+		  var x = document.getElementById("input").value;
+		  if (x == "") {
+		    alert("Name must be filled out");
+		    return false;
+		  }
+		} 
+	</script>
 </body>
 </html>

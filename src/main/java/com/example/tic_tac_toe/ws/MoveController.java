@@ -20,23 +20,10 @@ public class MoveController
 	@Autowired
 	private SimpMessagingTemplate messagingTemplate;
 	
-	boolean b = false;
 	
 	@MessageMapping(value="/makeMove")
 	public void makeMove(Move move, @Header("simpSessionId") String sessionId)
 	{
-		
-		if (b)
-		{
-			move.setSymbol('X');
-			b = false;
-		}
-		else
-		{
-			move.setSymbol('O');
-			b = true;
-		}
-		
 		
 		sendMessage(sessionId,"/queue/move", move);
 			
@@ -84,6 +71,7 @@ public class MoveController
 		{
 			String opponentSessionId = UsersList.HOME_usernameToSocketSession.get(opponentUsername);
 			sendMessage( opponentSessionId,"/queue/opponentMessage", new Message("Ready") );
+			sendMessage( sessionId,"/queue/opponentMessage", new Message("Let's go") );
 			
 			UsersList.socketToSocket.put(sessionId, opponentSessionId);
 			UsersList.socketToSocket.put(opponentSessionId, sessionId);
@@ -100,6 +88,8 @@ public class MoveController
 			}
 		}
 	}
+	
+	
 	
 	@MessageMapping(value="/outtaHome")
 	public void outtaHome(User myName,  @Header("simpSessionId") String sessionId)
@@ -128,20 +118,23 @@ public class MoveController
 	}
 	
 	
+	
 	@MessageMapping(value="/letsPlayAgain")
 	public void playAgain(User myName,  @Header("simpSessionId") String sessionId)
 	{
 		String opponentSessionId = UsersList.socketToSocket.get(sessionId);
 		
-		sendMessage( opponentSessionId, "/queue/opponentMessage", new Message("playAgain"));
+		sendMessage( opponentSessionId, "/queue/opponentMessage", new Message("Play Again"));
 	}
+	
+	
 	
 	private void sendMessage(String user, String destination, Object payload)
 	{
 		SimpMessageHeaderAccessor headerAccessor = SimpMessageHeaderAccessor.create(SimpMessageType.MESSAGE);
 		headerAccessor.setSessionId( user );
 		headerAccessor.setLeaveMutable(true);
-		messagingTemplate.convertAndSendToUser( user  , destination, payload, 
+		messagingTemplate.convertAndSendToUser( user, destination, payload, 
 				headerAccessor.getMessageHeaders());
 	}
 }

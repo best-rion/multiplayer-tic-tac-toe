@@ -10,14 +10,13 @@
 </head>
 <body>
 
-	<h2>Username: <span th:text="${principal}"></span> <span id="turn"></span></h2>
-	<h3>Opponent: <span th:text="${opponent}"></span> <span id="message"></span></h3>
+	<h2>Username: <span style="color: #0f77aa;" th:text="${principal}"></span> <span style="color: #007700;"  id="turn"></span></h2>
+	<h3>Opponent: <span style="color: #0faa77;" th:text="${opponent}"></span> 💬 <span id="message"></span></h3>
 	
 	
 	<div id="options">
 		<p id="wins"></p>
-		<a id="reset">play again</a>
-		<a th:href="@{/dashboard}">quit game</a>
+		<a id="reset"><button>play again</button></a>
 	</div>
 	
     <div id="container"></div>
@@ -25,19 +24,49 @@
 	<input type="text" th:value="${principal}" id="principal" hidden>
 
 <script>
+
+	var gameOn = true;
 	var iAmReadyToReset = false
 	var opponentIsReadyToReset = false
-	var gameOn = true;
+	var myTurn;
+	var mySymbol;
 	
-	var myTurn = false;
-	var mySymbol = 'X';
 	
 	const stompClient = new StompJs.Client({
 	    brokerURL: 'ws://localhost:8080/websocket'
 	});
+	
 
     var cells = new Array()
     var container = document.getElementById("container")
+	window.onload = () =>
+	{
+		$("#options").hide()
+
+		stompClient.activate();
+		
+		for (var y=0; y<3; y++)
+		{
+			var row = new Array()
+           	for (var x=0; x<3; x++)
+           	{
+               	var cell = document.createElement("button")
+               	cell.setAttribute("class", "cell")
+               	cell.setAttribute("onclick", "makeMove("+x+","+y+")")
+               	cell.style.left = (50*x)+"px"
+               	cell.style.top = (50*y)+"px"
+               	container.appendChild(cell)
+				row.push(cell)
+           	}
+			cells.push(row)
+       	}
+		
+		stompClient.publish
+		({
+           destination: "/app/inHome",
+           body: JSON.stringify({'username':$("#principal").val()})
+       	});
+	}
 	
 	
 	function reset()
@@ -56,47 +85,21 @@
 		
 		iAmReadyToReset = false
 		opponentIsReadyToReset = false
-		
-		$("#message").html( " (Ready)" )
 	}
 
-    window.onload = ()=>{
-		
-		$("#options").hide()
-
-		stompClient.activate();
-		
-		for (var y=0; y<3; y++)
-        {
-			var row = new Array()
-            for (var x=0; x<3; x++)
-            {
-                var cell = document.createElement("button")
-                cell.setAttribute("class", "cell")
-                cell.setAttribute("onclick", "makeMove("+x+","+y+")")
-                cell.style.left = (50*x)+"px"
-                cell.style.top = (50*y)+"px"
-                container.appendChild(cell)
-				row.push(cell)
-            }
-			cells.push(row)
-        }
-		
-		stompClient.publish({
-            destination: "/app/inHome",
-            body: JSON.stringify({'username':$("#principal").val()})
-        });
-		
-    }
+   
 
 	function makeMove(x,y)
 	{
 		if (myTurn && gameOn && cells[y][x].innerHTML==="")
 		{
-			stompClient.publish({
-			    destination: "/app/makeMove",
-			    body: JSON.stringify({ 'x': x, 'y': y, 'symbol':null })
-			});
+			stompClient.publish
+			(
+				{
+			    	destination: "/app/makeMove",
+			    	body: JSON.stringify({ 'x': x, 'y': y, 'symbol':mySymbol})
+				}
+			);
 		}
 	}
 	
@@ -136,9 +139,20 @@
 				)
 			  )
 			  {
-				$("#wins").html(cells[ winScenarios[i][0][1] ][ winScenarios[i][0][0] ].innerHTML+" wins")
-				$("#options").show()
+				if (cells[ winScenarios[i][0][1] ][ winScenarios[i][0][0] ].innerHTML == mySymbol)
+				{
+					$("#wins").html("You Won")
+				}
+				else
+				{
+					$("#wins").html("Opponent Won")
+				}
+
 				gameOn = false;
+				
+				$("#options").show()
+				
+				$("#message").html( "" )
 			  }
 		}
 	}
@@ -150,18 +164,20 @@
         cells[y][x].innerHTML = move.symbol
 		
 		checkWinScenarios()
-		
     }
 
 
-    stompClient.onConnect = (frame) => {
+    stompClient.onConnect = (frame) => 
+	{
 		
         console.log('Connected: ' + frame);
 		
-        stompClient.subscribe('/user/queue/move', (move) => {
+        stompClient.subscribe('/user/queue/move', (move) =>
+		{
             console.log(move.headers["message-id"])
             updateBoard(JSON.parse(move.body));
-			if (JSON.parse(move.body).symbol === mySymbol)
+			
+			if (myTurn)
 			{
 				myTurn = false;
 				$("#turn").html( "Opponent's Turn" )
@@ -169,13 +185,16 @@
 			else
 			{
 				myTurn = true;
-				$("#turn").html( "Your Turn ( "+mySymbol+" )" )
+				$("#turn").html( "Your Turn ("+mySymbol+")" )
 			}
 			
-        });
+			$("#message").html( "" )
+        })
 		
-		stompClient.subscribe('/user/queue/opponentMessage', (message) => {
+		stompClient.subscribe('/user/queue/opponentMessage', (message) =>
+		{
             console.log(message.headers["message-id"])
+			
             $("#message").html( " ("+JSON.parse(message.body).content+")" )
 			
 			if (JSON.parse(message.body).content === 'Ready')
@@ -183,45 +202,68 @@
 				myTurn=true
 				mySymbol='O'
 				$("#turn").html( "Your Turn ( O )" )
+				gameOn=true
+				$("#reset").show()
 			}
 			
-			if (JSON.parse(message.body).content === 'playAgain')
+			if (JSON.parse(message.body).content === "Let's go")
+			{
+				myTurn=false
+				mySymbol='X'
+				$("#turn").html( "Opponent's Turn" )
+			}
+			
+			if (JSON.parse(message.body).content === 'Play Again')
 			{
 				opponentIsReadyToReset = true
 				
 				if (iAmReadyToReset)
 				{
-					reset();
+					reset()
 				}
 			}
-        });
+			
+			if (JSON.parse(message.body).content === 'Quitted')
+			{
+				$("#reset").hide()
+				reset()
+				gameOn=false
+			}
+        })
 		
-		stompClient.publish({
+		stompClient.publish
+		({
             destination: "/app/inHome",
             body: JSON.stringify({'username':$("#principal").val()})
-        });
-    };
+    	})
+		
+		$("#message").html( " (Waiting)" )
+    }
 	
 	window.onbeforeunload = function () {
-		stompClient.deactivate();
-		stompClient.publish({
-	        destination: "/app/outtaHome",
-	        body: JSON.stringify({'username':$("#principal").val()})
-	    });
-	};
-	
 
+		stompClient.publish
+		({
+		    destination: "/app/outtaHome",
+		    body: JSON.stringify({'username':$("#principal").val()})
+		})
+		
+		stompClient.deactivate();
+	}
+	
 	stompClient.onWebSocketError = (error) => {
-	    console.error('Error with websocket', error);
-	};
+	    console.error('Error with websocket', error)
+	}
 
 	stompClient.onStompError = (frame) => {
-	    console.error('Broker reported error: ' + frame.headers['message']);
-	    console.error('Additional details: ' + frame.body);
-	};
+	    console.error('Broker reported error: ' + frame.headers['message'])
+	    console.error('Additional details: ' + frame.body)
+	}
 	
-	$(function () {
-	    $( "#reset" ).click(() => {
+	$(function ()
+	{
+	    $( "#reset" ).click(() =>
+		{
 			iAmReadyToReset = true;
 			
 			stompClient.publish({
@@ -233,8 +275,12 @@
 			{
 				reset();
 			}
-		});
-	});
+			else
+			{
+				$("#message").html( " (Waiting)" )
+			}
+		})
+	})
 	
 </script>
 </body>
