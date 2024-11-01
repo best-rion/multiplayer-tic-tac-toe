@@ -103,18 +103,17 @@ public class MoveController
 		{
 			String opponentSessionId = UsersList.DASHBOARD_usernameToSocketSession.get(opponentUsername);
 			sendMessage( opponentSessionId, "/queue/unknockFrom", myName);
-			UsersList.usernameToOpponent.remove(myName.getUsername());
 		}
 		
 		if ( UsersList.HOME_usernameToSocketSession.keySet().contains(opponentUsername) )
 		{
 			String opponentSessionId = UsersList.HOME_usernameToSocketSession.get(opponentUsername);
 			sendMessage( opponentSessionId, "/queue/opponentMessage", new Message("Quitted"));
-			UsersList.usernameToOpponent.remove(myName.getUsername());
 			
 			UsersList.socketToSocket.remove(sessionId);
 			UsersList.socketToSocket.remove(opponentSessionId);
 		}
+		UsersList.usernameToOpponent.remove(myName.getUsername());
 	}
 	
 	

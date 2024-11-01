@@ -9,15 +9,18 @@
     <title>tic-tac-toe</title>
 </head>
 <body>
-
-	<h2>Username: <span style="color: #0f77aa;" th:text="${principal}"></span> <span style="color: #007700;"  id="turn"></span></h2>
+	<div id="connect" style="width: 100px; text-align: center; background-color: #BFECFF;">Connnecting...</div>
+	
+	<h2>Username: <span style="color: #0f77aa;" th:text="${principal}"></span> </h2>
 	<h3>Opponent: <span style="color: #0faa77;" th:text="${opponent}"></span> 💬 <span id="message"></span></h3>
+	<h4><span style="color: #ce81f7;"  id="turn"></span></h4>
 	
 	
 	<div id="options">
 		<p id="wins"></p>
-		<a id="reset"><button>play again</button></a>
+		<button id="reset">Play Again</button>
 	</div>
+	<a th:href="@{/dashboard}"><button>Quit</button></a>
 	
     <div id="container"></div>
 	
@@ -33,7 +36,7 @@
 	
 	
 	const stompClient = new StompJs.Client({
-	    brokerURL: 'ws://localhost:8080/websocket'
+	    brokerURL: 'ws://10.18.119.86:8080/websocket'
 	});
 	
 
@@ -151,12 +154,10 @@
 				gameOn = false;
 				
 				$("#options").show()
-				
-				$("#message").html( "" )
 			  }
 		}
 	}
-
+	var count = 0;
     function updateBoard(move)
     {
         var x = parseInt(move.x)
@@ -164,13 +165,21 @@
         cells[y][x].innerHTML = move.symbol
 		
 		checkWinScenarios()
+		count++;
+		if (count==9)
+		{
+			$("#wins").html("Draw")
+			gameOn = false;
+			$("#options").show()
+		}
     }
 
 
     stompClient.onConnect = (frame) => 
 	{
-		
         console.log('Connected: ' + frame);
+		
+		$("#connect").html("connected")
 		
         stompClient.subscribe('/user/queue/move', (move) =>
 		{

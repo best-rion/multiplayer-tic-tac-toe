@@ -9,25 +9,26 @@
     <title>Dashboard</title>
 </head>
 <body>
-
+	<div id="connect" style="width: 100px; text-align: center; background-color: #BFECFF;">Connnecting...</div>
+	
 	<h2> Username : <span style="color: #0f77aa;" th:text="${principal}" id="principal"></span></h2>
 	
-	<h3 style="color: #44b5d5;">They want to play with you</h3>
-	<ul id="knocker">
+	<h3 style="color: #44b5d5;">Requests</h3>
+	<ul id="knocker" style="list-style-type: none;">
 		<li th:each="knocker: ${knockers}" th:id="${knocker}">
 			<form th:action="@{/dashboard}" th:object="${opponent}" method="post">
 				<input class="username" type="text" name="username" th:value="${knocker}" hidden>
-				<input type="submit" th:value="${knocker}">
+				<button id="knockerButton" type="submit" th:text="${knocker}"></button>
 			</form><br>
 		</li>
 	</ul>
 	
 	<h3 style="color: #2596be;">Active Users</h3>
-	<ul id="activeUsers">
+	<ul id="activeUsers"  style="list-style-type: none;">
 		<li th:each="user: ${activeUsers}">
 			<form th:action="@{/dashboard}" th:object="${opponent}" method="post">
 				<input class="username" type="text" name="username" th:value="${user}" hidden>
-				<input type="submit" th:value="${user}">
+				<button id="userButton" type="submit" th:text="${user}"></button>
 			</form><br>
 		</li>
 	</ul>
@@ -37,7 +38,7 @@
 	<script>
 
 		const stompClient = new StompJs.Client({
-		    brokerURL: 'ws://localhost:8080/websocket'
+		    brokerURL: 'ws://10.18.119.86:8080/websocket'
 		});
 		
 		window.onload = ()=>{
@@ -47,6 +48,8 @@
 		stompClient.onConnect = (frame) => {
 			
 	        console.log('Connected: ' + frame);
+			
+			$("#connect").html("connected")
 			
 			stompClient.subscribe('/topic/updateUsers', (users) => {
 	            console.log(users.headers["message-id"])
