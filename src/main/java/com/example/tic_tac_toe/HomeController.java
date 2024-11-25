@@ -23,7 +23,7 @@ public class HomeController
 					
 			model.addAttribute( "principal", principal );
 			model.addAttribute( "opponent", UsersList.usernameToOpponent.get(principal) );
-			return "home";
+			return "play";
 		}
 		return "redirect:/register";
 	}
@@ -52,29 +52,37 @@ public class HomeController
 	{	
 		String principal = UsersList.httpSession_username.get( session.getId() );
 		
-		List<String> activeUsers = new ArrayList<>();
-		for (String user: UsersList.httpSession_username.values())
+		if( principal !=null )
 		{
-			if (!user.equals(principal))
+			
+			List<String> activeUsers = new ArrayList<>();
+			for (String user: UsersList.httpSession_username.values())
 			{
-				activeUsers.add(user);
+				if (!user.equals(principal))
+				{
+					activeUsers.add(user);
+				}
 			}
+			
+			List<String> knockers = new ArrayList<>();
+			for (String user: UsersList.usernameToOpponent.keySet())
+			{
+				if (principal.equals(UsersList.usernameToOpponent.get(user)))
+				{
+					knockers.add(user);
+				}
+			}
+			
+			model.addAttribute("principal", principal);
+			model.addAttribute("opponent", new User());
+			model.addAttribute("activeUsers", activeUsers);
+			model.addAttribute("knockers", knockers);
+			return "dashboard";
 		}
-		
-		List<String> knockers = new ArrayList<>();
-		for (String user: UsersList.usernameToOpponent.keySet())
+		else
 		{
-			if (principal.equals(UsersList.usernameToOpponent.get(user)))
-			{
-				knockers.add(user);
-			}
+			return "redirect:/register";
 		}
-		
-		model.addAttribute("principal", principal);
-		model.addAttribute("opponent", new User());
-		model.addAttribute("activeUsers", activeUsers);
-		model.addAttribute("knockers", knockers);
-		return "dashboard";
 	}
 	
 	@PostMapping(value = "/dashboard")

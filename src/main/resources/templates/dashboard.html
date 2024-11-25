@@ -7,6 +7,24 @@
 	<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
     <title>Dashboard</title>
+
+	<style>
+		input[type=submit]
+		{
+			background-color: #05c5cc;
+			margin: 3px;
+			padding: 5px 10px;
+			border: none;
+			border-radius: 5px;
+			font-weight: bold;
+			letter-spacing: 2px;
+			color: #fff;
+		}
+	</style>
+
+
+
+
 </head>
 <body>
 	<div id="connect" style="width: 100px; text-align: center; background-color: #BFECFF;">Connnecting...</div>
@@ -18,7 +36,7 @@
 		<li th:each="knocker: ${knockers}" th:id="${knocker}">
 			<form th:action="@{/dashboard}" th:object="${opponent}" method="post">
 				<input class="username" type="text" name="username" th:value="${knocker}" hidden>
-				<button id="knockerButton" type="submit" th:text="${knocker}"></button>
+				<input id="knockerButton" type="submit" th:value="${knocker}">
 			</form><br>
 		</li>
 	</ul>
@@ -28,7 +46,7 @@
 		<li th:each="user: ${activeUsers}">
 			<form th:action="@{/dashboard}" th:object="${opponent}" method="post">
 				<input class="username" type="text" name="username" th:value="${user}" hidden>
-				<button id="userButton" type="submit" th:text="${user}"></button>
+				<input id="userButton" type="submit" th:value="${user}">
 			</form><br>
 		</li>
 	</ul>
@@ -38,7 +56,7 @@
 	<script>
 
 		const stompClient = new StompJs.Client({
-		    brokerURL: 'ws://10.18.119.86:8080/websocket'
+		    brokerURL: 'ws://10.18.122.174:8080/websocket'
 		});
 		
 		window.onload = ()=>{

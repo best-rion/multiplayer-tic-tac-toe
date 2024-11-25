@@ -70,8 +70,8 @@ public class MoveController
 		else
 		{
 			String opponentSessionId = UsersList.HOME_usernameToSocketSession.get(opponentUsername);
-			sendMessage( opponentSessionId,"/queue/opponentMessage", new Message("Ready") );
-			sendMessage( sessionId,"/queue/opponentMessage", new Message("Let's go") );
+			sendMessage( opponentSessionId,"/queue/opponentMessage", new Message("Let's go") );
+			sendMessage( sessionId,"/queue/opponentMessage", new Message("Ready") );
 			
 			UsersList.socketToSocket.put(sessionId, opponentSessionId);
 			UsersList.socketToSocket.put(opponentSessionId, sessionId);

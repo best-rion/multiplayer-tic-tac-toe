@@ -7,6 +7,19 @@
     <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
     <title>tic-tac-toe</title>
+	
+	<style>
+			.button
+			{
+				background-color: #4b7b99;
+				margin: 5px;
+				padding: 5px 10px;
+				border: none;
+				border-radius: 5px;
+				font-weight: bold;
+				color: #fff;
+			}
+		</style>
 </head>
 <body>
 	<div id="connect" style="width: 100px; text-align: center; background-color: #BFECFF;">Connnecting...</div>
@@ -18,9 +31,9 @@
 	
 	<div id="options">
 		<p id="wins"></p>
-		<button id="reset">Play Again</button>
+		<button id="reset" class="button">Play Again</button>
 	</div>
-	<a th:href="@{/dashboard}"><button>Quit</button></a>
+	<a th:href="@{/dashboard}"><button class="button">Quit</button></a>
 	
     <div id="container"></div>
 	
@@ -28,6 +41,7 @@
 
 <script>
 
+	var count = 0;
 	var gameOn = true;
 	var iAmReadyToReset = false
 	var opponentIsReadyToReset = false
@@ -36,7 +50,7 @@
 	
 	
 	const stompClient = new StompJs.Client({
-	    brokerURL: 'ws://10.18.119.86:8080/websocket'
+	    brokerURL: 'ws://10.18.122.174:8080/websocket'
 	});
 	
 
@@ -87,7 +101,8 @@
 		gameOn=true
 		
 		iAmReadyToReset = false
-		opponentIsReadyToReset = false
+		opponentIsReadyToReset = 
+		count=0
 	}
 
    
@@ -157,7 +172,6 @@
 			  }
 		}
 	}
-	var count = 0;
     function updateBoard(move)
     {
         var x = parseInt(move.x)
@@ -206,7 +220,7 @@
 			
             $("#message").html( " ("+JSON.parse(message.body).content+")" )
 			
-			if (JSON.parse(message.body).content === 'Ready')
+			if (JSON.parse(message.body).content === "Let's go")
 			{
 				myTurn=true
 				mySymbol='O'
@@ -215,7 +229,7 @@
 				$("#reset").show()
 			}
 			
-			if (JSON.parse(message.body).content === "Let's go")
+			if (JSON.parse(message.body).content === "Ready")
 			{
 				myTurn=false
 				mySymbol='X'

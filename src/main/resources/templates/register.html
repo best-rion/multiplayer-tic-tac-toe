@@ -5,8 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register</title>
 </head>
+		<style>
+			input[type=submit]
+			{
+				background-color: #4b7b99;
+				margin: 5px;
+				padding: 5px 10px;
+				border: none;
+				border-radius: 5px;
+				font-weight: bold;
+				color: #fff;
+			}
+		</style>
 <body>
-	
 	
     <form th:action="@{/register}" th:object="${user}" method="post" onsubmit="return validateForm()" >
         <input id="input" type="text" th:field="*{username}" placeholder = "Your name please"><br>
